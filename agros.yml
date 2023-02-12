@@ -1,0 +1,242 @@
+---
+openapi: 3.0.0
+info:
+  title: Agros RESTful API
+  version: 1.0.0
+  description: API para los agricultores
+servers:
+  - url: https://fs-api.agros.tech/
+paths:
+  "/producer/login":
+    post:
+      description: Logearme con los datos de un productor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Producer"
+      responses:
+        "200":
+          description: Productor ha iniciado session correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                    description: Token de accesso que permite realizar peticiones.
+        "401":
+          description: Nombre de usuario o contraseña invalidos.
+  "/producer/signup":
+    post:
+      description: Crear un nuevo productor.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Producer"
+      responses:
+        "200":
+          descripcion: Se ha creado el productor correctamente.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Producer"
+        "400":
+          descripcion:
+            No se pudo crear el productor debido a un error en lso datos
+            proporcionados.
+  "/producers/crops":
+    get:
+      description: Obtener todos los cultivos de un productor.
+      responses:
+        "200":
+          description: Lista de cultivos del productor.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/Crop"
+        "404":
+          description: No se encontraron los cultivos asociados al productor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No se encontraron cultivos asociados a este productor."
+      security:
+        - BearerAuth: []
+    post:
+      description: Agregar un cultivo a un productor.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Crop"
+      responses:
+        "201":
+          description: El cultivo se ha agregado correctamente al productor.
+      security:
+        - BearerAuth: []
+  "/producers/crops/{cropId}":
+    get:
+      description: Obtener un cultivo de un productor
+      parameters:
+        - "$ref": "#/components/parameters/CropId"
+      responses:
+        "200":
+          description: Se obtuvo el cultivo seleccionado para el productor.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Crop"
+        "404":
+          descripcion: Cultivo no encontrado.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No se han encontrado el cultivo asociados a este productor"
+      security:
+        - BearerAuth: []
+    delete:
+      descripcion: Eliminar un cultivo de un productor.
+      parameters:
+        - "$ref": "#/components/parameters/CropId"
+      responses:
+        "204":
+          descripcion: El cultivo ha sido eliminado exitosamente del productor.
+      security:
+        - BearerAuth: []
+    put:
+      descripcion: Actualizar informacion de un cultivo.
+      parameters:
+        - "$ref": "#/components/parameters/CropId"
+        - "$ref": "#/components/parameters/CropPayload"
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Informacion del cultivo actualizado correctamente.
+        "400":
+          descripcion: Solicitud invalida.
+        "404":
+          descripcion: Cultivo no encontrado.
+  "/producers/crops/search":
+    get:
+      description: Buscar cultivos por palabra de un productor.
+      parameters:
+        - "$ref": "#/components/parameters/KeywordCrop"
+      responses:
+          "200":
+          description: Lista de los cultivos encontrados para el productor.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/Crop"
+          "404":
+          description: No se encontraron cultivos buscados asociados al productor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No se han encontrado cultivos buscados asociados a este productor."
+      security:
+        - BearerAuth: []
+components:
+  schemas:
+    Producer:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          description: Nombre completo del productor
+        email:
+          type: string
+          description: Correo electronico del productor
+        password:
+          type: string
+          description: Contraseña del productor
+          format: password
+    Crop:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        plantingDate:
+          type: string
+          format: date
+        harvestDate:
+          type: string
+          format: date
+        location:
+          type: string
+        yield:
+          type: integer
+          format: int64
+        producerId:
+          type: string
+  parameters:
+    ProducerId:
+      name: id
+      in: path
+      description: ID del productor
+      required: true
+      schema:
+        "$ref": "#/components/schemas/Producer"
+    CropId:
+      name: id
+      in: path
+      description: ID del cultivo
+      required: true
+      schema:
+        "$ref": "#/components/schemas/Crop"
+    ProducerPayload:
+      name: Productor
+      in: body
+      description: Datos del productor
+      required: true
+      schema:
+        "$ref": "#/components/schemas/Producer"
+    CropPayload:
+      name: Cultivo
+      in: body
+      description: Datos del cultivo
+      required: true
+      schema:
+        "$ref": "#/components/schemas/Crop"
+    KeywordCrop:
+      in: query
+      name: keyword
+      required: true
+      description: Palabra clave para buscar en los nombres de los cultivos.
+      schema:
+        type: string
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
